@@ -5,6 +5,7 @@ const AppContext = createContext({
     createItem: (item) => {},
     getItem: (id) => {},
     updateItem: (item) => {},
+    deleteItem: (id) => {} // Nueva función
 });
 
 export default function Store({children}){
@@ -23,12 +24,17 @@ export default function Store({children}){
         return item;
     }
 
-    function updateItem(item){
-        const index = items.findIndex((i) => i.id === item.id);
-        const temp = [...items];
+    function updateItem(updatedItem) {
+        const updatedItems = items.map(item =>
+            item.id === updatedItem.id ? { ...updatedItem } : item
+        );
+        setItems(updatedItems);
+    }
 
-        temp[index] = { ...item };
-
+    // Función para eliminar un libro
+    function deleteItem(id) {
+        const filteredItems = items.filter((item) => item.id !== id); // Filtrar el libro por ID
+        setItems(filteredItems); // Actualizar el estado con los libros restantes
     }
 
     // return <div>{children}</div>
@@ -39,6 +45,7 @@ export default function Store({children}){
                 createItem,
                 getItem,
                 updateItem,
+                deleteItem, // Exponer la función deleteItem
             }}
         >
             {children}

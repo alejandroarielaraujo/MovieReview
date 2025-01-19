@@ -1,142 +1,196 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppContext } from "../store/store";
 import Layout from "../components/Layout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-export default function Create(){
+export default function Create() {
     const [title, setTitle] = useState("");    
-    const [author, setAuthor] = useState("");
+    const [genre, setGenre] = useState("");
     const [cover, setCover] = useState("");
-    const [intro, setIntro] = useState("");
-    const [completed, setCompleted] = useState(false);
+    const [director, setDirector] = useState("");    
     const [review, setReview] = useState("");
 
     const store = useAppContext();
     const navigate = useNavigate();
+    const location = useLocation();
 
-    function handleChange(e){
+    const inputStyle = {
+        padding: '10px',
+        border: '1px solid #ccc',
+        borderRadius: '5px',
+        fontSize: '16px',
+        width: '100%',  
+        marginBottom: '15px', 
+    };
+
+    const buttonStyle = {
+        buttonCover: {
+            padding: "10px 0px",
+            minWidth: "100px",
+            border: "none",
+            borderRadius: "5px",            
+            marginBottom: '20px',           
+        },
+        buttonSubmit: {
+            padding: "15px 20px",
+            minWidth: "200px",
+            border: "none",
+            borderRadius: "5px",
+            backgroundColor: "#28a745",
+            color: "white",
+            fontWeight: "bolder", 
+            fontSize: "18px",
+            cursor: "pointer", 
+        }
+    };
+
+    const queryParams = new URLSearchParams(location.search);
+    const movieId = queryParams.get("id");
+
+    useEffect(() => {
+        if (movieId) {
+            const existingMovie = store.getItem(movieId);
+            if (existingMovie) {
+                setTitle(existingMovie.title);
+                setGenre(existingMovie.genre);
+                setCover(existingMovie.cover);
+                setDirector(existingMovie.director);                
+                setReview(existingMovie.review);
+            }
+        } else {
+            setTitle("");
+            setGenre("");
+            setCover("");
+            setDirector("");            
+            setReview("");
+        }
+    }, [movieId, store]);
+
+    function handleChange(e) {
         const name = e.target.name;
         const value = e.target.value;
-
-        switch(name){
+        switch (name) {
             case 'title':
                 setTitle(value);
                 break;
-            case 'author':
-                setAuthor(value);
+            case 'genre':
+                setGenre(value);
                 break;
-            case 'intro':
-                setIntro(value);
-                break;
-            case 'completed':
-                setCompleted(e.target.checked);
-                break;
+            case 'director':
+                setDirector(value);
+                break;            
             case 'review':
                 setReview(value);
                 break;
-            
             default:
-
         }
     }
 
-    function handleOnChangeFile(e){
+    function handleOnChangeFile(e) {
         const element = e.target;
         const file = element.files[0];
-        const reader = new FileReader(); // Api que permite manipular archivos desde el navegador
-
+        const reader = new FileReader();
         reader.readAsDataURL(file);
-
-        reader.onloadend = function(){
+        reader.onloadend = function() {
             setCover(reader.result.toString());
         };
     }
 
-    function handleSubmit(e){
+    function handleSubmit(e) {
         e.preventDefault();
+        
+        if (!title || (!cover && !movieId)) {
+            alert("Title and Cover are required fields!");
+            return;
+        }
 
-        const newBook = {
-            id: crypto.randomUUID(),
-            title:title,
-            author,
+        const newMovie = {
+            id: movieId || crypto.randomUUID(),
+            title,
+            genre,
             cover,
-            intro,
-            completed,
+            director,            
             review,
         };
 
-        // TODO: mandar a registrar libro
-        store.createItem(newBook);
-        navigate("/");
+        if (movieId) {
+            store.updateItem(newMovie);
+        } else {
+            store.createItem(newMovie);
+        }
 
+        navigate("/");
     }
 
     return (
         <Layout>
             <form onSubmit={handleSubmit}>
                 <div>
-                        <div>Title</div>
-                        <input 
-                            type="text" 
-                            name="title" 
-                            onChange={handleChange} 
-                            value={title}
-                        />
-                        {/* {" "}
-                        {title} */}
+                    <div style={{ color: 'white', display: 'flex', alignItems: 'center' }}>
+                        Title <span style={{ color: 'white', marginLeft: '5px' }}>* </span>
+                        <span>Required field</span>
+                    </div>
+                    <input 
+                        type="text" 
+                        name="title" 
+                        onChange={handleChange} 
+                        value={title}
+                        style={inputStyle}
+                        required
+                    />
                 </div>
                 <div>
-                        <div>Author</div>
-                        <input 
-                            type="text" 
-                            name="author" 
-                            onChange={handleChange} 
-                            value={author}
-                        />
+                    <div style={{ color: 'white' }}>Genre</div>
+                    <input 
+                        type="text" 
+                        name="genre" 
+                        onChange={handleChange} 
+                        value={genre}
+                        style={inputStyle}
+                    />
                 </div>
                 <div>
-                        <div>Cover</div>
-                        <input 
-                            type="file" 
-                            name="cover" 
-                            onChange={handleOnChangeFile}                                        
-                        />
-                        <div>{ !!cover ? <img src={cover} width="200px" alt="preview" /> : ''}</div>
-                        
+                    <div style={{ color: 'white', display: 'flex', alignItems: 'center' }}>
+                        Cover <span style={{ color: 'white', marginLeft: '5px' }}>* </span>
+                        <span>Required field</span>
+                    </div>
+                    <input 
+                        type="file" 
+                        name="cover" 
+                        onChange={handleOnChangeFile}
+                        style={buttonStyle.buttonCover}
+                        // Aquí, solo requerimos la imagen si no existe una imagen ya cargada
+                        required={!cover && !movieId}  // Si estamos creando una película o no hay portada cargada
+                    />
+                    <div>{cover ? <img src={cover} width="200px" alt="preview" /> : ''}</div>
                 </div>
                 <div>
-                        <div>Introduction</div>
-                        <input 
-                            type="text" 
-                            name="intro" 
-                            onChange={handleChange} 
-                            value={intro}
-                        />
-                </div>
+                    <div style={{ color: 'white' }}>Director</div>
+                    <input 
+                        type="text" 
+                        name="director" 
+                        onChange={handleChange} 
+                        value={director}
+                        style={inputStyle} 
+                    />
+                </div>                
                 <div>
-                        <div>Completed</div>
-                        <input 
-                            type="checkbox" 
-                            name="completed" 
-                            onChange={handleChange} 
-                            value={completed}
-                        />
+                    <div style={{ color: 'white' }}>Review</div>
+                    <textarea 
+                        name="review" 
+                        onChange={handleChange} 
+                        value={review}
+                        rows="6"
+                        cols="40"
+                        style={inputStyle} 
+                    />
                 </div>
-                <div>
-                        <div>Review</div>
-                        <input 
-                            type="text" 
-                            name="review" 
-                            onChange={handleChange} 
-                            value={review}
-                        />
-                </div>
-
-                <input type="submit" value="Register book" />
-
-
-                
+                <input
+                    type="submit"
+                    value={movieId ? "Update Movie" : "Register Movie"}
+                    style={buttonStyle.buttonSubmit}
+                />
             </form>
         </Layout>
-    )
+    );
 }

@@ -1,4 +1,5 @@
 import { Route, Routes, BrowserRouter } from "react-router-dom";
+import './index.css';
 import Index from "./pages";
 import Create from "./pages/create";
 import View from "./pages/view";
